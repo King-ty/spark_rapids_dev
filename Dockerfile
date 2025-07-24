@@ -15,6 +15,9 @@ RUN apt-get update && apt-get install -y \
     wget \
     unzip \
     software-properties-common \
+    vim \
+    curl \
+    maven \
     # Clean up apt cache to keep image size down
     && rm -rf /var/lib/apt/lists/*
 
