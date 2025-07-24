@@ -10,8 +10,8 @@ chmod +x ~/spark_rapids_dev/scripts/run_container.sh
 ~/spark_rapids_dev/scripts/run_container.sh
 
 安装spark和rapids（没有测试过脚本）
-chmod +x ~/spark_rapids_dev/setup_spark_rapids.sh
-~/spark_rapids_dev/setup_spark_rapids.sh
+chmod +x ~/spark_rapids_dev/scripts/setup_spark_rapids.sh
+~/spark_rapids_dev/scripts/setup_spark_rapids.sh
 
 docker：
 spark 环境已经在 run 里面配置了
