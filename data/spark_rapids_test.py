@@ -16,6 +16,7 @@ def main():
         .config("spark.rapids.sql.explain", "ALL") \
         .config("spark.executorEnv.CUDA_VISIBLE_DEVICES", "0") \
         .getOrCreate()
+        # .config("spark.executorEnv.CUDA_VISIBLE_DEVICES", "0")设置无效，请使用export CUDA_VISIBLE_DEVICES=0
 
     # --- 2. 数据读取 ---
     # 从 CSV 文件读取销售和产品数据
