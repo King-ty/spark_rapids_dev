@@ -12,8 +12,7 @@ fi
 # Define the project directory on the host. This will be mounted to the same path inside the container.
 PROJECT_DIR=$(realpath ~/spark_rapids_dev)
 CONTAINER_PROJECT_DIR="/root/spark_rapids_dev"
-CONTAINER_SPARK_HOME="${CONTAINER_PROJECT_DIR}/source/spark-3.5.6-bin-hadoop3"
-CONTAINER_PATH="\$SPARK_HOME/bin:\$SPARK_HOME/sbin:\$PATH"
+CONTAINER_INIT_SCRIPT="${CONTAINER_PROJECT_DIR}/scripts/container_init.sh"
 
 # Ensure project directory and subdirectories exist
 mkdir -p "${PROJECT_DIR}/source"
@@ -21,6 +20,7 @@ mkdir -p "${PROJECT_DIR}/data"
 mkdir -p "${PROJECT_DIR}/cache/m2_cache"
 mkdir -p "${PROJECT_DIR}/cache/ccache"
 mkdir -p "${PROJECT_DIR}/cache/conda_cache"
+mkdir -p "${PROJECT_DIR}/cache/apt"
 
 echo "CONTAINER_NAME: ${CONTAINER_NAME}"
 
@@ -53,21 +53,43 @@ else
 
     echo "Starting new container: ${CONTAINER_NAME}"
 
-    docker run -itd  \
+    # Start container in background mode
+    docker run -d  \
         --name "${CONTAINER_NAME}" \
         --gpus all \
         --network host \
+        --privileged \
         --shm-size=4g \
         -v "${PROJECT_DIR}:${CONTAINER_PROJECT_DIR}" \
         -v "${PROJECT_DIR}/cache/m2_cache:/root/.m2" \
         -v "${PROJECT_DIR}/cache/ccache:/root/.ccache" \
         -v "${PROJECT_DIR}/cache/conda_cache:/root/.conda/pkgs" \
+        -v "${PROJECT_DIR}/cache/apt:/var/cache/apt" \
         -w "${CONTAINER_PROJECT_DIR}" \
+        --entrypoint /bin/bash \
         "${IMAGE_NAME}" \
-        /bin/bash -c "echo 'export SPARK_HOME=${CONTAINER_SPARK_HOME}' >> /root/.bashrc && echo 'export PATH=${CONTAINER_PATH}' >> /root/.bashrc && exec /usr/bin/tail -f /dev/null"
+        -c "chmod +x ${CONTAINER_INIT_SCRIPT} && echo 'INIT_START' && ${CONTAINER_INIT_SCRIPT} && echo 'INIT_COMPLETE' && tail -f /dev/null"
+
+    echo "Container started in background. Waiting for initialization..."
+    
+    # Display real-time logs and wait for initialization to complete
+    echo "=== Container initialization logs ==="
+    docker logs -f "${CONTAINER_NAME}" &
+    LOGS_PID=$!
+    
+    # Wait for initialization completion flag
+    while true; do
+        if docker logs "${CONTAINER_NAME}" 2>/dev/null | grep -q "INIT_COMPLETE"; then
+            echo ""
+            echo "=== Initialization completed! ==="
+            kill $LOGS_PID 2>/dev/null || true
+            sleep 1
+            break
+        fi
+        sleep 2
+    done
 
     echo 'Container started successfully!'
 fi
-
 echo "Attaching to running container: ${CONTAINER_NAME}"
 docker exec -it "${CONTAINER_NAME}" /bin/bash
