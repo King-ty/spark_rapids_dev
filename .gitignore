@@ -1,7 +1,10 @@
-source/
-data/
+source/*
+
+data/*
 !data/generate_data.py
 !data/spark_rapids_test.py
+
+cache/*/*
+
 *.log
-cache/*/
-!cache/*/.gitkeep
+!.gitkeep
